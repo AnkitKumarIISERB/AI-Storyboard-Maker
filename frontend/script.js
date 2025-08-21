@@ -1,5 +1,5 @@
 // =====================
-// Select elements
+// DOM Elements
 // =====================
 const canvas = document.querySelector('.canvas');
 const promptInput = document.getElementById('prompt');
@@ -8,13 +8,20 @@ const aiResult = document.getElementById('ai-result');
 const styleSelect = document.getElementById('style');
 const darkModeToggle = document.getElementById('dark-mode-toggle');
 const exportBtn = document.getElementById('export-btn');
+const clearBtn = document.getElementById('clear-btn');
+const undoBtn = document.getElementById('undo-btn');
+const redoBtn = document.getElementById('redo-btn');
 const historyList = document.getElementById('history');
+const modal = document.getElementById('modal');
+const modalImg = document.getElementById('modal-img');
 
 let frameCount = 0;
-let history = [];
+let historyStack = [];
+let redoStack = [];
+let historyData = [];
 
 // =====================
-// Frame management
+// Frame Management
 // =====================
 function addFrame(imgSrc = null) {
     frameCount++;
@@ -28,15 +35,20 @@ function addFrame(imgSrc = null) {
         img.style.width = '100%';
         img.style.height = '100%';
         img.style.objectFit = 'cover';
+        img.addEventListener('click', () => openModal(imgSrc));
         frame.appendChild(img);
     }
 
     const removeBtn = document.createElement('button');
     removeBtn.textContent = '×';
-    removeBtn.addEventListener('click', () => frame.remove());
+    removeBtn.addEventListener('click', () => {
+        frame.remove();
+        saveHistory();
+    });
     frame.appendChild(removeBtn);
 
     canvas.appendChild(frame);
+    saveHistory();
 }
 
 // =====================
@@ -47,7 +59,7 @@ async function generateAIImage() {
     const style = styleSelect.value;
 
     if (!prompt) {
-        alert('Please enter a prompt!');
+        alert('Enter a prompt!');
         return;
     }
 
@@ -67,12 +79,11 @@ async function generateAIImage() {
             alert('Error: ' + data.error);
         } else {
             const imgSrc = data.image_url;
-            aiResult.innerHTML = `<img src="${imgSrc}" alt="AI Image">`;
             addFrame(imgSrc);
 
-            // Save to history
-            history.push({ prompt, style, imgSrc });
-            updateHistory();
+            // Add to history panel
+            historyData.push({ prompt, style, imgSrc });
+            updateHistoryPanel();
         }
     } catch (err) {
         console.error(err);
@@ -84,27 +95,39 @@ async function generateAIImage() {
 }
 
 // =====================
-// Update history panel
+// History Panel
 // =====================
-function updateHistory() {
+function updateHistoryPanel() {
     historyList.innerHTML = '';
-    history.forEach((item, index) => {
+    historyData.forEach((item, idx) => {
         const li = document.createElement('li');
-        li.textContent = `${index + 1}. ${item.prompt} [${item.style}]`;
+        li.textContent = `${idx + 1}. ${item.prompt} [${item.style}]`;
         li.addEventListener('click', () => addFrame(item.imgSrc));
         historyList.appendChild(li);
     });
 }
 
 // =====================
-// Dark mode toggle
+// Modal
+// =====================
+function openModal(src) {
+    modal.style.display = 'block';
+    modalImg.src = src;
+}
+
+modal.querySelector('.close').onclick = function() {
+    modal.style.display = 'none';
+}
+
+// =====================
+// Dark Mode Toggle
 // =====================
 darkModeToggle.addEventListener('click', () => {
     document.body.classList.toggle('dark-mode');
 });
 
 // =====================
-// Export storyboard as images
+// Canvas Actions
 // =====================
 exportBtn.addEventListener('click', () => {
     canvas.querySelectorAll('.frame img').forEach((img, idx) => {
@@ -115,12 +138,39 @@ exportBtn.addEventListener('click', () => {
     });
 });
 
+clearBtn.addEventListener('click', () => {
+    canvas.innerHTML = '';
+    saveHistory();
+});
+
 // =====================
-// Event listeners
+// Undo/Redo
 // =====================
-generateBtn.addEventListener('click', generateAIImage);
+function saveHistory() {
+    const snapshot = canvas.innerHTML;
+    historyStack.push(snapshot);
+    redoStack = [];
+}
+
+undoBtn.addEventListener('click', () => {
+    if (historyStack.length > 1) {
+        redoStack.push(historyStack.pop());
+        canvas.innerHTML = historyStack[historyStack.length - 1];
+    }
+});
+
+redoBtn.addEventListener('click', () => {
+    if (redoStack.length > 0) {
+        const redoState = redoStack.pop();
+        canvas.innerHTML = redoState;
+        historyStack.push(redoState);
+    }
+});
 
 // =====================
 // Initialize
 // =====================
-addFrame(); // initial empty frame
+addFrame(); // initial frame
+saveHistory();
+
+generateBtn.addEventListener('click', generateAIImage);
