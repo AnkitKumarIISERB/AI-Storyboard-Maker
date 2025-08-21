@@ -12,15 +12,7 @@ const historyList = document.getElementById('history');
 
 let frameCount = 0;
 let history = [];
-const GRID_SIZE = 20;
-
-// =====================
-// Multi-select
-// =====================
 let selectedFrames = new Set();
-let isDragging = false;
-let dragStart = { x: 0, y: 0 };
-let offsets = new Map(); // offset for each selected frame
 
 // =====================
 // Frame management
@@ -30,9 +22,6 @@ function addFrame(imgSrc = null) {
     const frame = document.createElement('div');
     frame.className = 'frame';
     frame.id = `frame-${frameCount}`;
-    frame.style.position = 'absolute';
-    frame.style.left = '0px';
-    frame.style.top = '0px';
 
     if (imgSrc) {
         const img = document.createElement('img');
@@ -43,40 +32,25 @@ function addFrame(imgSrc = null) {
         frame.appendChild(img);
     }
 
+    // Remove button
     const removeBtn = document.createElement('button');
     removeBtn.textContent = '×';
-    removeBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        frame.remove();
-        selectedFrames.delete(frame);
+    removeBtn.addEventListener('click', () => {
+        canvas.removeChild(frame);
+        selectedFrames.delete(frame.id);
     });
     frame.appendChild(removeBtn);
 
-    // =====================
-    // Select & Drag
-    // =====================
+    // Select frame on click
     frame.addEventListener('click', (e) => {
-        if (selectedFrames.has(frame)) {
-            selectedFrames.delete(frame);
-            frame.classList.remove('selected');
+        if (e.target === removeBtn) return; // Ignore remove button
+        if (selectedFrames.has(frame.id)) {
+            selectedFrames.delete(frame.id);
+            frame.style.borderColor = '#ccc';
         } else {
-            selectedFrames.add(frame);
-            frame.classList.add('selected');
+            selectedFrames.add(frame.id);
+            frame.style.borderColor = '#3498db';
         }
-    });
-
-    frame.addEventListener('mousedown', (e) => {
-        if (!selectedFrames.has(frame)) return;
-        isDragging = true;
-        dragStart.x = e.clientX;
-        dragStart.y = e.clientY;
-        offsets.clear();
-        selectedFrames.forEach(f => {
-            offsets.set(f, {
-                x: parseInt(f.style.left),
-                y: parseInt(f.style.top)
-            });
-        });
     });
 
     canvas.appendChild(frame);
@@ -113,6 +87,7 @@ async function generateAIImage() {
             aiResult.innerHTML = `<img src="${imgSrc}" alt="AI Image">`;
             addFrame(imgSrc);
 
+            // Save to history
             history.push({ prompt, style, imgSrc });
             updateHistory();
         }
@@ -137,32 +112,6 @@ function updateHistory() {
         historyList.appendChild(li);
     });
 }
-
-// =====================
-// Dragging for multi-select
-// =====================
-document.addEventListener('mousemove', (e) => {
-    if (!isDragging) return;
-    const dx = e.clientX - dragStart.x;
-    const dy = e.clientY - dragStart.y;
-
-    selectedFrames.forEach(f => {
-        const offset = offsets.get(f);
-        let left = offset.x + dx;
-        let top = offset.y + dy;
-
-        // Snap to grid
-        left = Math.round(left / GRID_SIZE) * GRID_SIZE;
-        top = Math.round(top / GRID_SIZE) * GRID_SIZE;
-
-        f.style.left = left + 'px';
-        f.style.top = top + 'px';
-    });
-});
-
-document.addEventListener('mouseup', () => {
-    isDragging = false;
-});
 
 // =====================
 // Dark mode toggle
@@ -191,4 +140,4 @@ generateBtn.addEventListener('click', generateAIImage);
 // =====================
 // Initialize
 // =====================
-addFrame();
+addFrame(); // initial empty frame
