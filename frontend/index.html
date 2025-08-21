@@ -4,54 +4,72 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Storyboard Maker</title>
-    <!-- Flask static paths -->
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
 <body>
     <header>
         <h1>AI Storyboard Maker</h1>
-        <button id="dark-mode-toggle">🌙 Dark Mode</button>
+        <div class="header-actions">
+            <button id="dark-mode-toggle"><i class="fa fa-moon"></i> Dark Mode</button>
+        </div>
     </header>
 
-    <main>
-        <!-- Sidebar: AI Controls -->
+    <main class="container">
+        <!-- Sidebar -->
         <aside class="sidebar">
-            <h2>Generate AI Image</h2>
-            <label for="prompt">Prompt:</label>
-            <textarea id="prompt" placeholder="Enter your scene description..."></textarea>
+            <!-- AI Controls -->
+            <div class="card">
+                <h2>Generate AI Image</h2>
+                <label for="prompt">Prompt:</label>
+                <textarea id="prompt" placeholder="Describe your scene..."></textarea>
 
-            <label for="style">Style:</label>
-            <select id="style">
-                <option value="Cinematic">Cinematic</option>
-                <option value="Cartoon">Cartoon</option>
-                <option value="Anime">Anime</option>
-                <option value="Realistic">Realistic</option>
-                <option value="Fantasy">Fantasy</option>
-            </select>
+                <label for="style">Style:</label>
+                <select id="style">
+                    <option value="Cinematic">Cinematic</option>
+                    <option value="Cartoon">Cartoon</option>
+                    <option value="Anime">Anime</option>
+                    <option value="Realistic">Realistic</option>
+                    <option value="Fantasy">Fantasy</option>
+                </select>
 
-            <button id="generate-btn">Generate Image</button>
-            <button id="export-btn">Export Storyboard</button>
-
-            <div id="ai-result">
-                <p>Generated AI image will appear here</p>
+                <button id="generate-btn">Generate Image <i class="fa fa-robot"></i></button>
             </div>
 
-            <h3>History</h3>
-            <ul id="history"></ul>
+            <!-- Frame Actions -->
+            <div class="card frame-actions">
+                <h2>Frame Actions</h2>
+                <button id="export-btn"><i class="fa fa-download"></i> Export Storyboard</button>
+                <button id="clear-btn"><i class="fa fa-trash"></i> Clear Canvas</button>
+                <button id="undo-btn"><i class="fa fa-rotate-left"></i> Undo</button>
+                <button id="redo-btn"><i class="fa fa-rotate-right"></i> Redo</button>
+            </div>
+
+            <!-- History Panel -->
+            <div class="card history-panel">
+                <h2>History</h2>
+                <ul id="history"></ul>
+            </div>
         </aside>
 
-        <!-- Canvas for frames -->
+        <!-- Canvas -->
         <section class="canvas-container">
             <h2>Storyboard Canvas</h2>
             <div class="canvas"></div>
         </section>
     </main>
 
+    <!-- AI Preview Modal -->
+    <div id="modal" class="modal">
+        <span class="close">&times;</span>
+        <img class="modal-content" id="modal-img">
+        <div id="caption"></div>
+    </div>
+
     <footer>
         <p>AI Storyboard Maker &copy; 2025 | Powered by Stability AI</p>
     </footer>
 
-    <!-- Flask static JS path -->
     <script src="{{ url_for('static', filename='script.js') }}" defer></script>
 </body>
 </html>
