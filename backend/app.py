@@ -2,13 +2,13 @@ import os
 import base64
 import uuid
 import requests
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify, send_from_directory, render_template
 from dotenv import load_dotenv
 
 # Load .env from backend folder
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), ".env"))
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder="../frontend", template_folder="../frontend")
 
 # Get Stability API key
 STABILITY_API_KEY = os.getenv("STABILITY_API_KEY")
@@ -21,6 +21,16 @@ API_URL = "https://api.stability.ai/v1/generation/stable-diffusion-xl-1024-v1-0/
 STATIC_FOLDER = os.path.join(os.path.dirname(__file__), "static")
 os.makedirs(STATIC_FOLDER, exist_ok=True)
 
+# ===========================
+# Serve frontend
+# ===========================
+@app.route("/")
+def home():
+    return render_template("index.html")  # make sure index.html is in frontend folder
+
+# ===========================
+# AI Image Generation API
+# ===========================
 @app.route("/generate", methods=["POST"])
 def generate_image():
     try:
@@ -60,19 +70,19 @@ def generate_image():
         with open(output_path, "wb") as f:
             f.write(base64.b64decode(image_base64))
 
-        # Return URL (Flask serves static files)
+        # Return URL
         return jsonify({"image_url": f"/static/{filename}"})
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-
+# ===========================
+# Serve generated images
+# ===========================
 @app.route("/static/<path:filename>")
 def serve_static(filename):
     return send_from_directory(STATIC_FOLDER, filename)
 
-
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
-
