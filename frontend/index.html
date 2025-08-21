@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Storyboard Maker</title>
-    <link rel="stylesheet" href="style.css">
+    <!-- Flask static paths -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
     <header>
@@ -50,6 +51,7 @@
         <p>AI Storyboard Maker &copy; 2025 | Powered by Stability AI</p>
     </footer>
 
-    <script src="script.js"></script>
+    <!-- Flask static JS path -->
+    <script src="{{ url_for('static', filename='script.js') }}" defer></script>
 </body>
 </html>
