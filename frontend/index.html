@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Storyboard Maker</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <h1>AI Storyboard Maker</h1>
+        <button id="dark-mode-toggle">🌙 Dark Mode</button>
+    </header>
+
+    <main>
+        <!-- Sidebar: AI Controls -->
+        <aside class="sidebar">
+            <h2>Generate AI Image</h2>
+            <label for="prompt">Prompt:</label>
+            <textarea id="prompt" placeholder="Enter your scene description..."></textarea>
+
+            <label for="style">Style:</label>
+            <select id="style">
+                <option value="Cinematic">Cinematic</option>
+                <option value="Cartoon">Cartoon</option>
+                <option value="Anime">Anime</option>
+                <option value="Realistic">Realistic</option>
+                <option value="Fantasy">Fantasy</option>
+            </select>
+
+            <button id="generate-btn">Generate Image</button>
+            <button id="export-btn">Export Storyboard</button>
+
+            <div id="ai-result">
+                <p>Generated AI image will appear here</p>
+            </div>
+
+            <h3>History</h3>
+            <ul id="history"></ul>
+        </aside>
+
+        <!-- Canvas for frames -->
+        <section class="canvas-container">
+            <h2>Storyboard Canvas</h2>
+            <div class="canvas"></div>
+        </section>
+    </main>
+
+    <footer>
+        <p>AI Storyboard Maker &copy; 2025 | Powered by Stability AI</p>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
