@@ -1,5 +1,5 @@
 // =====================
-// DOM Elements
+// Select elements
 // =====================
 const canvas = document.querySelector('.canvas');
 const promptInput = document.getElementById('prompt');
@@ -8,26 +8,31 @@ const aiResult = document.getElementById('ai-result');
 const styleSelect = document.getElementById('style');
 const darkModeToggle = document.getElementById('dark-mode-toggle');
 const exportBtn = document.getElementById('export-btn');
-const clearBtn = document.getElementById('clear-btn');
-const undoBtn = document.getElementById('undo-btn');
-const redoBtn = document.getElementById('redo-btn');
 const historyList = document.getElementById('history');
-const modal = document.getElementById('modal');
-const modalImg = document.getElementById('modal-img');
 
 let frameCount = 0;
-let historyStack = [];
-let redoStack = [];
-let historyData = [];
+let history = [];
+const GRID_SIZE = 20;
 
 // =====================
-// Frame Management
+// Multi-select
+// =====================
+let selectedFrames = new Set();
+let isDragging = false;
+let dragStart = { x: 0, y: 0 };
+let offsets = new Map(); // offset for each selected frame
+
+// =====================
+// Frame management
 // =====================
 function addFrame(imgSrc = null) {
     frameCount++;
     const frame = document.createElement('div');
     frame.className = 'frame';
     frame.id = `frame-${frameCount}`;
+    frame.style.position = 'absolute';
+    frame.style.left = '0px';
+    frame.style.top = '0px';
 
     if (imgSrc) {
         const img = document.createElement('img');
@@ -35,20 +40,46 @@ function addFrame(imgSrc = null) {
         img.style.width = '100%';
         img.style.height = '100%';
         img.style.objectFit = 'cover';
-        img.addEventListener('click', () => openModal(imgSrc));
         frame.appendChild(img);
     }
 
     const removeBtn = document.createElement('button');
     removeBtn.textContent = '×';
-    removeBtn.addEventListener('click', () => {
+    removeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
         frame.remove();
-        saveHistory();
+        selectedFrames.delete(frame);
     });
     frame.appendChild(removeBtn);
 
+    // =====================
+    // Select & Drag
+    // =====================
+    frame.addEventListener('click', (e) => {
+        if (selectedFrames.has(frame)) {
+            selectedFrames.delete(frame);
+            frame.classList.remove('selected');
+        } else {
+            selectedFrames.add(frame);
+            frame.classList.add('selected');
+        }
+    });
+
+    frame.addEventListener('mousedown', (e) => {
+        if (!selectedFrames.has(frame)) return;
+        isDragging = true;
+        dragStart.x = e.clientX;
+        dragStart.y = e.clientY;
+        offsets.clear();
+        selectedFrames.forEach(f => {
+            offsets.set(f, {
+                x: parseInt(f.style.left),
+                y: parseInt(f.style.top)
+            });
+        });
+    });
+
     canvas.appendChild(frame);
-    saveHistory();
 }
 
 // =====================
@@ -59,7 +90,7 @@ async function generateAIImage() {
     const style = styleSelect.value;
 
     if (!prompt) {
-        alert('Enter a prompt!');
+        alert('Please enter a prompt!');
         return;
     }
 
@@ -79,11 +110,11 @@ async function generateAIImage() {
             alert('Error: ' + data.error);
         } else {
             const imgSrc = data.image_url;
+            aiResult.innerHTML = `<img src="${imgSrc}" alt="AI Image">`;
             addFrame(imgSrc);
 
-            // Add to history panel
-            historyData.push({ prompt, style, imgSrc });
-            updateHistoryPanel();
+            history.push({ prompt, style, imgSrc });
+            updateHistory();
         }
     } catch (err) {
         console.error(err);
@@ -95,39 +126,53 @@ async function generateAIImage() {
 }
 
 // =====================
-// History Panel
+// Update history panel
 // =====================
-function updateHistoryPanel() {
+function updateHistory() {
     historyList.innerHTML = '';
-    historyData.forEach((item, idx) => {
+    history.forEach((item, index) => {
         const li = document.createElement('li');
-        li.textContent = `${idx + 1}. ${item.prompt} [${item.style}]`;
+        li.textContent = `${index + 1}. ${item.prompt} [${item.style}]`;
         li.addEventListener('click', () => addFrame(item.imgSrc));
         historyList.appendChild(li);
     });
 }
 
 // =====================
-// Modal
+// Dragging for multi-select
 // =====================
-function openModal(src) {
-    modal.style.display = 'block';
-    modalImg.src = src;
-}
+document.addEventListener('mousemove', (e) => {
+    if (!isDragging) return;
+    const dx = e.clientX - dragStart.x;
+    const dy = e.clientY - dragStart.y;
 
-modal.querySelector('.close').onclick = function() {
-    modal.style.display = 'none';
-}
+    selectedFrames.forEach(f => {
+        const offset = offsets.get(f);
+        let left = offset.x + dx;
+        let top = offset.y + dy;
+
+        // Snap to grid
+        left = Math.round(left / GRID_SIZE) * GRID_SIZE;
+        top = Math.round(top / GRID_SIZE) * GRID_SIZE;
+
+        f.style.left = left + 'px';
+        f.style.top = top + 'px';
+    });
+});
+
+document.addEventListener('mouseup', () => {
+    isDragging = false;
+});
 
 // =====================
-// Dark Mode Toggle
+// Dark mode toggle
 // =====================
 darkModeToggle.addEventListener('click', () => {
     document.body.classList.toggle('dark-mode');
 });
 
 // =====================
-// Canvas Actions
+// Export storyboard as images
 // =====================
 exportBtn.addEventListener('click', () => {
     canvas.querySelectorAll('.frame img').forEach((img, idx) => {
@@ -138,39 +183,12 @@ exportBtn.addEventListener('click', () => {
     });
 });
 
-clearBtn.addEventListener('click', () => {
-    canvas.innerHTML = '';
-    saveHistory();
-});
-
 // =====================
-// Undo/Redo
+// Event listeners
 // =====================
-function saveHistory() {
-    const snapshot = canvas.innerHTML;
-    historyStack.push(snapshot);
-    redoStack = [];
-}
-
-undoBtn.addEventListener('click', () => {
-    if (historyStack.length > 1) {
-        redoStack.push(historyStack.pop());
-        canvas.innerHTML = historyStack[historyStack.length - 1];
-    }
-});
-
-redoBtn.addEventListener('click', () => {
-    if (redoStack.length > 0) {
-        const redoState = redoStack.pop();
-        canvas.innerHTML = redoState;
-        historyStack.push(redoState);
-    }
-});
+generateBtn.addEventListener('click', generateAIImage);
 
 // =====================
 // Initialize
 // =====================
-addFrame(); // initial frame
-saveHistory();
-
-generateBtn.addEventListener('click', generateAIImage);
+addFrame();
